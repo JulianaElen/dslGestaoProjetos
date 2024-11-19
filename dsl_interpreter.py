@@ -160,6 +160,62 @@ class DSL_interpreter(cmd.Cmd):
         except Exception as e:
             print(f'Erro ao adicionar tarefa: {e}. Verifique o arquivo de tarefas do projeto e se o projeto foi selecionado da forma correta.')
 
+    def do_ASSIGN(self, args):
+        'ASSIGN "tarefa" "responsável": Atribuir um responsável para uma tarefa específica.'
+        
+        matches = re.findall(r'"([^"]+)"', args)
+
+        if len(matches) < 2:
+            print("Erro: Os campos [nome], [prazo], [prioridade] são obrigatórios e devem estar entre aspas.")
+            return
+        
+        nome_tarefa, responsavel = matches
+
+        if not self.current_project or not self.current_task_file:
+            print("Erro: Selecione um projeto primeiro com o comando 'SELECT [projeto]'.")
+            return
+        
+        data = pd.read_csv(self.current_task_file)
+
+        data['responsavel'] = data['responsavel'].astype(str)
+        
+        if nome_tarefa not in data['nome'].values:
+            print(f'Erro: A tarefa "{nome_tarefa}" não foi encontrada na lista de tarefas. Adicione a tarefa usando ADD_TASK "<nome>" "<prazo>" "<prioridade>".')
+            return
+        
+        data.loc[data['nome'] == nome_tarefa, 'responsavel'] = responsavel
+        
+        data.to_csv(self.current_task_file, index=False)
+        
+        print(f"Responsável '{responsavel}' atribuído à tarefa '{nome_tarefa}' com sucesso.")
+
+    def do_SET_STATUS(self, args):
+        'SET_STATUS "tarefa" "status": Definir o status de uma tarefa (e.g., "em andamento", "concluída").'
+        
+        matches = re.findall(r'"([^"]+)"', args)
+        if len(matches) < 2:
+            print("Erro: Os campos [nome], [prazo], [prioridade] são obrigatórios e devem estar entre aspas.")
+            return
+        
+        nome_tarefa, status = matches
+
+        if not self.current_project or not self.current_task_file:
+            print("Erro: Selecione um projeto primeiro com o comando 'SELECT [projeto]'.")
+            return
+        
+        data = pd.read_csv(self.current_task_file)
+
+        data['status'] = data['status'].astype(str)
+        
+        if nome_tarefa not in data['nome'].values:
+            print(f'Erro: A tarefa "{nome_tarefa}" não foi encontrada na lista de tarefas. Adicione a tarefa usando ADD_TASK "<nome>" "<prazo>" "<prioridade>".')
+            return
+        
+        data.loc[data['nome'] == nome_tarefa, 'status'] = status
+        
+        data.to_csv(self.current_task_file, index=False)
+        
+        print(f"Status da tarefa '{nome_tarefa}' atualizado para '{status}'.")
 
 if __name__ == "__main__":
     DSL_interpreter().cmdloop()
