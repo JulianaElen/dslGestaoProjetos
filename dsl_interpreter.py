@@ -121,12 +121,45 @@ class DSL_interpreter(cmd.Cmd):
             return
         
         project_id = projeto.iloc[0]['id']
-        self.current_task_file = f"tarefas_{project_id}.csv"
+        self.current_task_file = f"tasks{project_id}.csv"
         self.current_project = project_id
         
         print(f"Projeto '{project_name}' selecionado com sucesso. Arquivo de tarefas agora é '{self.current_task_file}'.")
 
-    
+    def do_ADD_TASK(self, args):
+        'ADD_TASK "<nome>" "<prazo>" "<prioridade>": Adicionar uma nova tarefa ao projeto atual, com prazo e prioridade.'
+
+        if self.current_project is None:
+            print('Erro: Nenhum projeto selecionado. Use o comando SELECT "<nome>" para selecionar um projeto.')
+            return
+
+        try:
+            matches = re.findall(r'"([^"]+)"', args)
+            if len(matches) < 3:
+                print('Erro: Os campos "<nome>", "<prazo>" e "<prioridade>" são obrigatórios e devem estar entre aspas.')
+                return
+            
+            nome_tarefa, prazo, prioridade = matches
+
+            tarefa_id = self.get_next_id(self.current_task_file)
+
+            new_task = {
+                "id": tarefa_id,
+                "nome": nome_tarefa,
+                "prazo": prazo,
+                "prioridade": prioridade,
+                "responsavel": "",
+                "status": "Não iniciada",
+                "dependencias": "",
+            }
+
+            self.add_data_to_file(self.current_task_file, new_task)
+
+            print(f"Tarefa '{nome_tarefa}' adicionada ao projeto '{self.current_project}' com sucesso.")
+        
+        except Exception as e:
+            print(f'Erro ao adicionar tarefa: {e}. Verifique o arquivo de tarefas do projeto e se o projeto foi selecionado da forma correta.')
+
 
 if __name__ == "__main__":
     DSL_interpreter().cmdloop()
