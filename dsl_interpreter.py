@@ -39,17 +39,12 @@ class DSL_interpreter(cmd.Cmd):
     def generate_file(self, file_type, project_id=None):
         if file_type == "project":
             file_name = "projects.csv"
-            columns = ["id", "nome", "creation_date"]
+            columns = ["id", "nome", "data"]
         elif file_type == "tasks":
-            if project_id is None:
-                print("Erro: O ID do projeto é obrigatório para gerar arquivos de tarefas.")
-                return
             file_name = f"tasks{project_id}.csv"
             columns = ["id", "nome", "prazo", "prioridade", "responsavel", "status", "dependencias"]
         else:
-            print(f"Erro: Tipo de arquivo desconhecido '{file_type}'.")
             return
-
         try:
             with open(file_name, mode="w", newline="", encoding="utf-8") as file:
                 writer = csv.writer(file)
@@ -63,7 +58,7 @@ class DSL_interpreter(cmd.Cmd):
                 writer = csv.DictWriter(file, fieldnames=data.keys())
                 writer.writerow(data)
         except Exception as e:
-            print(f"Erro ao adicionar dados ao arquivo '{file_name}': {e}")
+            print(f"Erro ao adicionar dados ao arquivo: {e}")
 
     def do_CREATE_PROJECT(self, args):
         'CREATE_PROJECT "<nome>": Criar um novo projeto com o nome especificado.'
@@ -94,8 +89,7 @@ class DSL_interpreter(cmd.Cmd):
 
         self.current_project = project_id
         self.current_task_file = f"tasks{project_id}.csv"
-        print(f"Projeto '{project_name}' criado com sucesso.")
-        print(f"Arquivo de tarefas '{self.current_task_file}' foi criado e definido como o arquivo atual.")
+        print(f"Projeto '{project_name}' criado com seu respectivo arquivo de tasks.")
 
     def do_SELECT(self, args):
         'SELECT "<nome>": Seleciona um projeto existente ( com arquivo de tarefas correspondente).'
@@ -124,7 +118,7 @@ class DSL_interpreter(cmd.Cmd):
         self.current_task_file = f"tasks{project_id}.csv"
         self.current_project = project_id
         
-        print(f"Projeto '{project_name}' selecionado com sucesso. Arquivo de tarefas agora é '{self.current_task_file}'.")
+        print(f"Projeto '{project_name}' selecionado com sucesso.")
 
     def do_ADD_TASK(self, args):
         'ADD_TASK "<nome>" "<prazo>" "<prioridade>": Adicionar uma nova tarefa ao projeto atual, com prazo e prioridade.'
@@ -171,7 +165,7 @@ class DSL_interpreter(cmd.Cmd):
         
         nome_tarefa, responsavel = matches
 
-        if not self.current_project or not self.current_task_file:
+        if not self.current_project:
             print('Erro: Nenhum projeto selecionado. Use o comando SELECT "<nome>" para selecionar um projeto.')
             return
         
@@ -194,12 +188,12 @@ class DSL_interpreter(cmd.Cmd):
         
         matches = re.findall(r'"([^"]+)"', args)
         if len(matches) < 2:
-            print("Erro: Os campos [nome], [prazo], [prioridade] são obrigatórios e devem estar entre aspas.")
+            print("Erro: Os campos \"<tarefa>\" e \"<status>\" são obrigatórios e devem estar entre aspas.")
             return
         
         nome_tarefa, status = matches
 
-        if not self.current_project or not self.current_task_file:
+        if not self.current_project:
             print('Erro: Nenhum projeto selecionado. Use o comando SELECT "<nome>" para selecionar um projeto.')
             return
         
@@ -220,7 +214,7 @@ class DSL_interpreter(cmd.Cmd):
     def do_LIST_TASKS(self, arg):
         'LIST_TASKS "filtro": Lista tarefas do projeto com base em um filtro específico ou exibe todas se nenhum filtro for fornecido.'
        
-        if not self.current_project or not self.current_task_file:
+        if not self.current_project:
             print('Erro: Nenhum projeto selecionado. Use o comando SELECT "<nome>" para selecionar um projeto.')
             return
 
@@ -247,23 +241,20 @@ class DSL_interpreter(cmd.Cmd):
                     data = data[data[column] != value]
 
             else:
-                print("Exibindo todas as tarefas do projeto.")
+                print("Todas as tarefas do projeto.")
 
             if not data.empty:
                 headers = ["ID", "Nome", "Prazo", "Prioridade", "Responsável", "Status", "Dependências"]
                 print(tabulate(data, headers=headers, tablefmt="fancy_grid"))
             else:
-                print("Nenhuma tarefa encontrada com o filtro especificado.")
-
-        except ValueError as ve:
-            print(f"Erro no filtro: {ve}")
+                print("Nenhuma tarefa encontrada com o filtro pedido.")
         except Exception as e:
             print(f"Erro ao listar as tarefas: {e}")
 
     def do_REMOVE_TASK(self, args):
         'REMOVE_TASK "<nome>": Remover uma tarefa do projeto.'
         
-        if not self.current_project or not self.current_task_file:
+        if not self.current_project :
             print('Erro: Nenhum projeto selecionado. Use o comando SELECT "<nome>" para selecionar um projeto.')
             return
         
@@ -288,7 +279,7 @@ class DSL_interpreter(cmd.Cmd):
     def do_ADD_DEPENDENCY(self, args):
         'ADD_DEPENDENCY "<tarefa>" "<tarefa_dependente>": Adicionar uma dependência entre tarefas.'
 
-        if not self.current_project or not self.current_task_file:
+        if not self.current_project:
             print('Erro: Nenhum projeto selecionado. Use o comando SELECT "<nome>" para selecionar um projeto.')
             return
 
@@ -317,6 +308,7 @@ class DSL_interpreter(cmd.Cmd):
             dependencias_atual = data.at[tarefa_idx, 'dependencias']
 
             dependencias_lista = dependencias_atual.split() if dependencias_atual else []
+
             if tarefa_dependente not in dependencias_lista:
                 dependencias_lista.append(tarefa_dependente)
                 data.at[tarefa_idx, 'dependencias'] = " ".join(dependencias_lista)
@@ -407,15 +399,12 @@ class DSL_interpreter(cmd.Cmd):
         
         tarefa_id = int(tarefa_id)
         
-        if not self.current_project or not self.current_task_file:
+        if not self.current_project:
             print('Erro: Nenhum projeto selecionado. Use o comando SELECT "<nome>" para selecionar um projeto.')
             return
         
         try:
             data = pd.read_csv(self.current_task_file, encoding="utf-8")
-        except FileNotFoundError:
-            print(f"Erro: O arquivo de tarefas '{self.current_task_file}' não foi encontrado.")
-            return
         except pd.errors.EmptyDataError:
             print("Erro: O arquivo de tarefas está vazio.")
             return
@@ -440,16 +429,16 @@ class DSL_interpreter(cmd.Cmd):
         'SHOW_PROJECTS: Exibir todos os projetos existentes em formato tabular.'
         
         if not os.path.isfile("projects.csv"):
-            print("Nenhum projeto encontrado.")
+            print("Ainda não foi criado nenhum projeto. Use o comando CREATE_PRJECT <nome> para criar um novo projeto .")
             return
 
         data = pd.read_csv("projects.csv")
-        print("Projetos existentes:")
+        print("Projetos:")
         print(tabulate(data, headers="keys", tablefmt="fancy_grid", showindex=False))
 
     def do_EXIT(self, arg):
         'EXIT: Sai da interface de linha de comando.'
-        print("Saindo da interface DSL.")
+        print("Saindo da interface DSL de Gestão de Projetos. Obrigada!.")
         return True       
 
 if __name__ == "__main__":
