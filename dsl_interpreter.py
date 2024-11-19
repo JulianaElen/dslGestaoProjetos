@@ -97,5 +97,36 @@ class DSL_interpreter(cmd.Cmd):
         print(f"Projeto '{project_name}' criado com sucesso.")
         print(f"Arquivo de tarefas '{self.current_task_file}' foi criado e definido como o arquivo atual.")
 
+    def do_SELECT(self, args):
+        'SELECT "<nome>": Seleciona um projeto existente ( com arquivo de tarefas correspondente).'
+        
+        match = re.match(r'^"([^"]+)"$', args.strip())
+
+        if not match:
+            print('Erro: Nome do projeto é obrigatório e deve estar entre aspas. Use o comando SELECT "<nome>" corretamente.')
+            return
+
+        project_name = match.group(1).strip()
+        
+        try:
+            data = pd.read_csv("projects.csv")
+        except Exception as e:
+            print(f"Erro ao ler o arquivo 'projects.csv': {e}")
+            return
+        
+        projeto = data[data['nome'] == project_name]
+        
+        if projeto.empty:
+            print(f'Erro: Projeto "{project_name}" não existe. Confira os projetos existentes usando LIST_PROJECTS ou crie um novo projeto usando CREATE_PROJECT "<nome>".')
+            return
+        
+        project_id = projeto.iloc[0]['id']
+        self.current_task_file = f"tarefas_{project_id}.csv"
+        self.current_project = project_id
+        
+        print(f"Projeto '{project_name}' selecionado com sucesso. Arquivo de tarefas agora é '{self.current_task_file}'.")
+
+    
+
 if __name__ == "__main__":
     DSL_interpreter().cmdloop()
