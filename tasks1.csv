@@ -1,2 +1,3 @@
 id,nome,prazo,prioridade,responsavel,status,dependencias
-1,Primeira tarefa,10 dias,Urgente,Jose,Em andamento,
+1,Primeira tarefa modificada,10 dias,Urgente,Jose,Em andamento,Segunda tarefa
+2,Segunda tarefa,29 dias,Comum,,Não iniciada,
