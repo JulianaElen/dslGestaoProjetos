@@ -1,3 +1,5 @@
 pip install pandas
 pip install tabulate
 pip install fpdf 
+
+Para iniciar use: python dsl_interpreter.py
